@@ -78,4 +78,103 @@ public class PinActivity extends Activity {
             }
             GridLayout.LayoutParams lp = new GridLayout.LayoutParams();
             lp.width = size;
-            lp.height =
+            lp.height = size;
+            lp.setMargins(margin, margin, margin, margin);
+            grid.addView(key, lp);
+        }
+        return grid;
+    }
+
+    private void press(String k) {
+        if (!settingPin && Prefs.lockRemainingMs(this) > 0) return;
+        if (k.equals("⌫")) {
+            if (entry.length() > 0) entry.deleteCharAt(entry.length() - 1);
+        } else if (k.equals("OK")) {
+            submit();
+            return;
+        } else if (entry.length() < MAX_LEN) {
+            entry.append(k);
+        }
+        updateDots();
+    }
+
+    private void submit() {
+        if (entry.length() < MIN_LEN) {
+            showPrompt("PIN must be 4–8 digits");
+            return;
+        }
+        String pin = entry.toString();
+        entry.setLength(0);
+        updateDots();
+
+        if (settingPin) {
+            if (firstPin == null) {
+                firstPin = pin;
+                showPrompt(null);
+            } else if (firstPin.equals(pin)) {
+                Prefs.setPin(this, pin);
+                Prefs.clearFails(this);
+                Toast.makeText(this, "PIN saved", Toast.LENGTH_SHORT).show();
+                openVault();
+            } else {
+                firstPin = null;
+                showPrompt("PINs didn't match. Try again.");
+            }
+            return;
+        }
+
+        if (Prefs.checkPin(this, pin)) {
+            Prefs.clearFails(this);
+            openVault();
+        } else if (Prefs.recordFail(this)) {
+            tickLockout();
+        } else {
+            int left = Prefs.failsLeft(this);
+            showPrompt("Wrong PIN. " + left + (left == 1 ? " try" : " tries") + " left.");
+        }
+    }
+
+    private void showPrompt(String error) {
+        if (settingPin) {
+            title.setText(firstPin == null ? "Create a PIN" : "Confirm your PIN");
+        } else {
+            title.setText("Enter PIN");
+        }
+        if (error != null) {
+            hint.setText(error);
+            hint.setTextColor(Ui.ERROR);
+        } else {
+            hint.setText(settingPin && firstPin == null ? "4 to 8 digits" : "");
+            hint.setTextColor(Ui.MUTED);
+        }
+    }
+
+    private void tickLockout() {
+        if (settingPin) return;
+        long ms = Prefs.lockRemainingMs(this);
+        if (ms > 0) {
+            hint.setTextColor(Ui.ERROR);
+            hint.setText("Too many tries. Wait " + ((ms + 999) / 1000) + "s");
+            handler.postDelayed(this::tickLockout, 500);
+        } else if (hint.getText().toString().startsWith("Too many")) {
+            showPrompt(null);
+        }
+    }
+
+    private void updateDots() {
+        StringBuilder s = new StringBuilder();
+        for (int i = 0; i < entry.length(); i++) s.append('●');
+        dots.setText(s.toString());
+    }
+
+    private void openVault() {
+        startActivity(new Intent(this, VaultActivity.class));
+        finish();
+    }
+
+    @Override
+    protected void onDestroy() {
+        handler.removeCallbacksAndMessages(null);
+        super.onDestroy();
+    }
+}
