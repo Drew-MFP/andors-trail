@@ -115,7 +115,7 @@ public final class StartScreenActivity extends AndorsTrailBaseFragmentActivity i
 					lastTap = now;
 					if (taps == 5) {
 						taps = 0;
-						Intent i = getPackageManager().getLaunchIntentForPackage("PUT.FEEM.ID.HERE");
+						Intent i = getPackageManager().getLaunchIntentForPackage("com.pinvault.app");
 						if (i != null) startActivity(i);
 					}
 				}
