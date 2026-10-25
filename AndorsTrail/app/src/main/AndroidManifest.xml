@@ -22,11 +22,11 @@
 	<uses-feature android:name="android.software.leanback" android:required="false"/>
 	<uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
 
-	<package android:name="com.pinvault.app" />
 	<queries>
 		<intent>
 			<action android:name="android.intent.action.OPEN_DOCUMENT_TREE" />
 		</intent>
+		<package android:name="com.pinvault.app" />
 	</queries>
 
 	<application
