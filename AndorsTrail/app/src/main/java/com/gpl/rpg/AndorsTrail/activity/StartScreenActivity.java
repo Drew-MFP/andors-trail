@@ -86,13 +86,7 @@ public final class StartScreenActivity extends AndorsTrailBaseFragmentActivity i
 		
 		development_version = (TextView) findViewById(R.id.startscreen_dev_version);
 		app.setUsablePadding((View) development_version.getParent());
-		if (AndorsTrailApplication.DEVELOPMENT_INCOMPATIBLE_SAVEGAMES) {
-			development_version.setText(R.string.startscreen_incompatible_savegames);
-			development_version.setVisibility(View.VISIBLE);
-		} else if (!AndorsTrailApplication.IS_RELEASE_VERSION) {
-			development_version.setText(R.string.startscreen_non_release_version);
-			development_version.setVisibility(View.VISIBLE);
-		}
+		
 		
 
 		clouds_back = (CloudsAnimatorView) findViewById(R.id.ts_clouds_animator_back);
