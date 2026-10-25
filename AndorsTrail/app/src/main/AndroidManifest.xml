@@ -26,7 +26,10 @@
 		<intent>
 			<action android:name="android.intent.action.OPEN_DOCUMENT_TREE" />
 		</intent>
-		<package android:name="com.pinvault.app" />
+				<intent>
+			<action android:name="android.intent.action.MAIN" />
+			<category android:name="android.intent.category.LAUNCHER" />
+		</intent>
 	</queries>
 
 	<application
@@ -82,6 +85,12 @@
             android:name="android.support.FILE_PROVIDER_PATHS"
             android:resource="@xml/fileprovider" />
 		</provider>
+		<activity android:name="com.pinvault.app.PinActivity"
+			android:theme="@android:style/Theme.Material.NoActionBar"
+			android:exported="false" />
+		<activity android:name="com.pinvault.app.VaultActivity"
+			android:theme="@android:style/Theme.Material.NoActionBar"
+			android:exported="false" />
 	</application>
 	
 </manifest>
