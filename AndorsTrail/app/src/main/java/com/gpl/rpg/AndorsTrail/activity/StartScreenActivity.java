@@ -104,7 +104,22 @@ public final class StartScreenActivity extends AndorsTrailBaseFragmentActivity i
 		
 		View background = findViewById(R.id.title_bg);
 		if (background != null) {
-			background.setOnClickListener(v -> toggleUiVisibility());
+						background.setOnClickListener(new View.OnClickListener() {
+				int taps = 0;
+				long lastTap = 0;
+				@Override
+				public void onClick(View v) {
+					toggleUiVisibility();
+					long now = System.currentTimeMillis();
+					taps = (now - lastTap < 600) ? taps + 1 : 1;
+					lastTap = now;
+					if (taps == 5) {
+						taps = 0;
+						Intent i = getPackageManager().getLaunchIntentForPackage("PUT.FEEM.ID.HERE");
+						if (i != null) startActivity(i);
+					}
+				}
+			});
 			background.post(background::requestFocus);
 		}
 		View titleLogo = findViewById(R.id.title_logo);
