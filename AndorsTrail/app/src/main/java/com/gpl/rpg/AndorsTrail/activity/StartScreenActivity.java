@@ -171,9 +171,6 @@ public final class StartScreenActivity extends AndorsTrailBaseFragmentActivity i
 		ui_visible = !ui_visible; 
 		int visibility = ui_visible ? View.VISIBLE : View.GONE;
 		if (tv != null) tv.setVisibility(visibility);
-		if (!AndorsTrailApplication.IS_RELEASE_VERSION) {
-			if (development_version != null) development_version.setVisibility(visibility);
-		}
 		if (currentFragment != null) {
 			if (ui_visible) {
 
