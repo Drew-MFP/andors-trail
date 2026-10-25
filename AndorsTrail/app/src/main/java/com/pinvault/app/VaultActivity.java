@@ -123,3 +123,135 @@ public class VaultActivity extends Activity {
         if (dialogShowing()) openDialog.dismiss();
         if (!isChangingConfigurations()) finish();
           }
+        private void reload() {
+        PackageManager pm = getPackageManager();
+        Set<String> saved = Prefs.getApps(this);
+        Set<String> stillInstalled = new java.util.HashSet<>();
+        items.clear();
+        for (String pkg : saved) {
+            try {
+                ApplicationInfo ai = pm.getApplicationInfo(pkg, 0);
+                items.add(new AppItem(pkg, pm.getApplicationLabel(ai).toString(), pm.getApplicationIcon(ai)));
+                stillInstalled.add(pkg);
+            } catch (PackageManager.NameNotFoundException ignored) {
+                // App was uninstalled; drop it from the vault
+            }
+        }
+        if (stillInstalled.size() != saved.size()) Prefs.setApps(this, stillInstalled);
+        Collections.sort(items, (a, b) -> a.label.compareToIgnoreCase(b.label));
+        adapter.notifyDataSetChanged();
+    }
+
+    private void launch(AppItem item) {
+        Intent i = getPackageManager().getLaunchIntentForPackage(item.pkg);
+        if (i == null) {
+            Toast.makeText(this, "Can't open " + item.label, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        startActivity(i);
+    }
+
+    private void confirmRemove(AppItem item) {
+        if (dialogShowing()) return;
+        openDialog = new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert)
+                .setTitle("Remove " + item.label + "?")
+                .setMessage("It will be removed from the vault only, not uninstalled.")
+                .setPositiveButton("Remove", (d, w) -> {
+                    d.dismiss();
+                    Set<String> apps = Prefs.getApps(this);
+                    apps.remove(item.pkg);
+                    Prefs.setApps(this, apps);
+                    reload();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void showAddDialog() {
+        if (dialogShowing()) return;
+        PackageManager pm = getPackageManager();
+        Intent main = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER);
+        List<ResolveInfo> found = pm.queryIntentActivities(main, 0);
+        Set<String> current = Prefs.getApps(this);
+
+        Map<String, String> choices = new LinkedHashMap<>();
+        for (ResolveInfo ri : found) {
+            String pkg = ri.activityInfo.packageName;
+            if (pkg.equals(getPackageName()) || current.contains(pkg) || choices.containsKey(pkg)) continue;
+            choices.put(pkg, ri.loadLabel(pm).toString());
+        }
+        if (choices.isEmpty()) {
+            Toast.makeText(this, "No more apps to add", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        List<Map.Entry<String, String>> sorted = new ArrayList<>(choices.entrySet());
+        Collections.sort(sorted, (a, b) -> a.getValue().compareToIgnoreCase(b.getValue()));
+        String[] labels = new String[sorted.size()];
+        for (int i = 0; i < labels.length; i++) labels[i] = sorted.get(i).getValue();
+        boolean[] checked = new boolean[labels.length];
+
+        openDialog = new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert)
+                .setTitle("Add apps to vault")
+                .setMultiChoiceItems(labels, checked, (d, which, isChecked) -> checked[which] = isChecked)
+                .setPositiveButton("Add", (d, w) -> {
+                    d.dismiss();
+                    Set<String> apps = Prefs.getApps(this);
+                    for (int i = 0; i < checked.length; i++) if (checked[i]) apps.add(sorted.get(i).getKey());
+                    Prefs.setApps(this, apps);
+                    reload();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void showMenu(View anchor) {
+        PopupMenu menu = new PopupMenu(this, anchor);
+        menu.getMenu().add(0, 1, 0, "Change PIN");
+        menu.getMenu().add(0, 2, 1, "Lock now");
+        menu.setOnMenuItemClickListener(mi -> {
+            if (mi.getItemId() == 1) {
+                startActivity(new Intent(this, PinActivity.class).putExtra(PinActivity.EXTRA_CHANGE, true));
+            }
+            finish();
+            return true;
+        });
+        menu.show();
+    }
+
+    private class AppAdapter extends BaseAdapter {
+        @Override public int getCount() { return items.size(); }
+        @Override public Object getItem(int pos) { return items.get(pos); }
+        @Override public long getItemId(int pos) { return pos; }
+
+        @Override
+        public View getView(int pos, View convert, ViewGroup parent) {
+            LinearLayout cell;
+            ImageView icon;
+            TextView label;
+            if (convert == null) {
+                cell = new LinearLayout(VaultActivity.this);
+                cell.setOrientation(LinearLayout.VERTICAL);
+                cell.setGravity(Gravity.CENTER_HORIZONTAL);
+                cell.setPadding(0, Ui.dp(VaultActivity.this, 6), 0, Ui.dp(VaultActivity.this, 6));
+                icon = new ImageView(VaultActivity.this);
+                int s = Ui.dp(VaultActivity.this, 54);
+                cell.addView(icon, new LinearLayout.LayoutParams(s, s));
+                label = Ui.text(VaultActivity.this, "", 12, Ui.FG, false);
+                label.setSingleLine(true);
+                label.setEllipsize(TextUtils.TruncateAt.END);
+                label.setPadding(Ui.dp(VaultActivity.this, 4), Ui.dp(VaultActivity.this, 6),
+                        Ui.dp(VaultActivity.this, 4), 0);
+                cell.addView(label, new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            } else {
+                cell = (LinearLayout) convert;
+                icon = (ImageView) cell.getChildAt(0);
+                label = (TextView) cell.getChildAt(1);
+            }
+            AppItem item = items.get(pos);
+            icon.setImageDrawable(item.icon);
+            label.setText(item.label);
+            return cell;
+        }
+    }
+                    }
